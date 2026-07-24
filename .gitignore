@@ -1,0 +1,10 @@
+node_modules/
+.env
+*.log
+chroma-data/
+.DS_Store
+.claude/
+
+# The frontend is its own separate git repo/GitHub repo (deploys to Vercel
+# independently of this backend, which deploys to Render) - not tracked here.
+frontend/

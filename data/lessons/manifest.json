@@ -1,0 +1,17 @@
+[
+  {
+    "filePath": "../../class-subtitle/module 1/01_what-is-mobile-development_epm/01_what-is-mobile-development_epm.vtt",
+    "lessonName": "What Is Mobile Development",
+    "videoId": "m1-01-what-is-mobile-development"
+  },
+  {
+    "filePath": "../../class-subtitle/module 1/02_react-native-vs-expo_epm/02_react-native-vs-expo_epm.vtt",
+    "lessonName": "React Native vs Expo",
+    "videoId": "m1-02-react-native-vs-expo"
+  },
+  {
+    "filePath": "../../class-subtitle/module 1/03_setting-up-env-creating-first-expo-project_epm/03_setting-up-env-creating-first-expo-project_epm.vtt",
+    "lessonName": "Setting Up Your Environment and Creating Your First Expo Project",
+    "videoId": "m1-03-setting-up-env-first-expo-project"
+  }
+]

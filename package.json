@@ -1,0 +1,36 @@
+{
+  "name": "rag-course-companion",
+  "version": "1.0.0",
+  "description": "RAG system for answering questions about course video lessons, with citation and clip-finder features",
+  "main": "graph.js",
+  "type": "module",
+  "scripts": {
+    "ingest": "node ingest.js",
+    "start": "node server.js",
+    "test:ingest": "node test/test-ingest.js",
+    "test:query": "node test/test-query.js",
+    "test:crag": "node test/test-crag-retry.js",
+    "test:guardrail": "node test/test-guardrail.js",
+    "test:trace": "node test/test-trace.js",
+    "test:clips": "node test/test-clips.js",
+    "test:server": "node test/test-server.js",
+    "test:all": "npm run test:ingest && npm run test:query && npm run test:crag && npm run test:guardrail && npm run test:trace && npm run test:clips && npm run test:server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@langchain/core": "^1.2.3",
+    "@langchain/langgraph": "^1.4.8",
+    "chromadb": "^3.5.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.2.0",
+    "openai": "^6.48.0",
+    "pdf-parse": "^2.4.5",
+    "subsrt-ts": "^2.1.2",
+    "youtube-transcript": "^1.3.1",
+    "zod": "^4.4.3"
+  }
+}
