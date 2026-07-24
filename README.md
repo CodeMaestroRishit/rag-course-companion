@@ -173,8 +173,9 @@ anyway. Render runs a normal long-lived Node process instead, which fits.
    `class-subtitle/` + `data/lessons/manifest.json` and running
    `node ingest.js` once via Render's shell/a one-off job.
 
-See `frontend/README.md` for deploying the frontend to Vercel and pointing it
-at this backend's URL.
+The frontend lives in its own repo -
+[rag-course-companion-frontend](https://github.com/CodeMaestroRishit/rag-course-companion-frontend)
+- see its README for deploying to Vercel and pointing it at this backend's URL.
 
 ## Known limitations / TODOs
 
