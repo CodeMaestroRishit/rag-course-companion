@@ -28,3 +28,10 @@ export async function listSources() {
 
   return [...bySourceId.values()].sort((a, b) => a.lessonName.localeCompare(b.lessonName));
 }
+
+/** Delete every chunk belonging to one source (identified by the stable `videoId` field). */
+export async function deleteSource(sourceId) {
+  const collection = await getCollection();
+  await collection.delete({ where: { videoId: sourceId } });
+}
+
