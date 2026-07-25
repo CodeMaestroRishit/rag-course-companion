@@ -1,253 +1,83 @@
-# SeekPoint
+<div align="center">
 
-A Retrieval-Augmented Generation system over course video transcripts (`.srt`/`.vtt`),
-with cited Q&A and a clip-finder for content creators. JavaScript/Node.js only,
-`@langchain/langgraph` for orchestration, Chroma for vector storage, OpenAI for
-embeddings/generation.
+# 🔎 SeekPoint
 
-## Architecture
+**Find the exact moment.**
 
-```
-ingest.js   -> parses subtitles, chunks, classifies, embeds, upserts into Chroma
-graph.js    -> transform -> retrieve -> merge -> rerank -> generate -> grade -> (retry?) -> guardrail
-clips.js    -> browseClips (metadata filter, no LLM) + searchClips (graph.js in "clip" mode)
-server.js   -> Express API wrapping graph.js and clips.js
-```
+Ask questions about your course lessons and get cited, timestamped answers.
+Surface funny, insightful, or controversial clips in seconds. Built for
+creators and learners who don't have time to scrub through hours of video.
 
-`graph.js`'s pipeline is one LangGraph `StateGraph` used in two modes:
-- **answer** mode (`runQuery`): the Q&A path, `generate` produces a cited factual answer.
-- **clip** mode (`searchClips`): `generate` produces `{ category, startTime, endTime, pitch }` instead.
+[![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](https://react.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![LangGraph](https://img.shields.io/badge/LangGraph-orchestration-1a1a2e)](https://www.langchain.com/langgraph)
+[![Chroma](https://img.shields.io/badge/ChromaDB-vector%20store-FF6F61)](https://www.trychroma.com)
+[![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
+[![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render&logoColor=white)](https://render.com)
 
-Every node appends a step to `state.trace`, including across retries, so the full
-final trace shows exactly what the pipeline did.
+**[🚀 Live Demo](https://rag-course-companion-frontend-dqql.vercel.app)**
 
-## Setup
+<br>
 
-### 1. Install dependencies
+<!-- 📸 SCREENSHOT: full-app hero shot — Answers tab, mid-conversation, with
+     the Sources sidebar and a cited answer visible. This is the first thing
+     visitors see, make it count. -->
+![SeekPoint hero screenshot](docs/screenshots/hero.png)
 
-```bash
-npm install
-```
+</div>
 
-### 2. Set environment variables
+---
 
-Copy the template and fill in your OpenAI key:
+## ✨ Features
 
-```bash
-cp .env.example .env
-# then edit .env and set OPENAI_API_KEY=sk-...
-```
+### 💬 Cited Q&A, not just a chatbot
+Ask a question in plain language and get an answer grounded **only** in your
+ingested lessons — every claim cites the lesson name and an exact timestamp
+(or page number, for PDFs), rendered as clickable pills. If the lessons don't
+cover it, it says so instead of guessing.
 
-`.env` is git-ignored. Variables used:
+<!-- 📸 SCREENSHOT: a question + answer with citation pills visible -->
+![Answers with citations](docs/screenshots/answers-citations.png)
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `OPENAI_API_KEY` | (required) | embeddings (`text-embedding-3-small`) + generation (`gpt-4o-mini`) |
-| `CHROMA_HOST` | `localhost` | Chroma server host |
-| `CHROMA_PORT` | `8000` | Chroma server port |
-| `PORT` | `3000` | port `server.js` listens on |
+### 🧠 A reasoning trace you can actually see
+Every query runs through a real pipeline — query transform (HyDE + sub-query
+splitting) → parallel retrieval → dedup → LLM rerank → generate → self-grade
+→ guardrail — and you can watch every step. Low-confidence answers trigger an
+automatic retry loop with feedback from the grading step, visible in the
+trace timeline.
 
-### 3. Start Chroma locally
+<!-- 📸 SCREENSHOT: the trace panel open, showing colored step cards,
+     ideally with a retry sequence visible -->
+![Reasoning trace panel](docs/screenshots/trace-panel.png)
 
-```bash
-npx chromadb run --path ./chroma-data
-```
+### 🎬 Clip Finder for content creators
+**Browse** every lesson pre-tagged as funny, insightful, controversial,
+emotional, or informative, filterable by confidence score. **Search** in
+plain language ("find something funny about job interviews") and get back
+one best-match clip with an exact timestamp, ready to cut.
 
-Leave this running in its own terminal. Verify it's up:
+<!-- 📸 SCREENSHOT: Clips tab in Browse mode, category filters + clip cards -->
+![Clip finder](docs/screenshots/clip-finder.png)
 
-```bash
-curl http://localhost:8000/api/v2/heartbeat
-```
+### 📚 Ingest from anywhere
+Upload `.vtt`/`.srt` subtitle files, PDFs (cited by page number instead of
+timestamp), or paste a YouTube link (pulls existing captions — no
+transcription needed). Everything runs through the same classify → embed →
+upsert pipeline.
 
-### 4. Ingest lesson data
+<!-- 📸 SCREENSHOT: the Add Source modal with a file selected -->
+![Add a source](docs/screenshots/add-source.png)
 
-`ingest.js` reads a manifest JSON file listing subtitle files + lesson names:
+### 🗂️ Manage what's ingested
+See every source with its chunk count in a sidebar, and delete anything you
+don't want anymore — no digging through a database required.
 
-```bash
-node ingest.js data/lessons/manifest.json
-# or just: npm run ingest   (defaults to data/lessons/manifest.json)
-```
+### 🕘 History that remembers
+Every question (from either tab) is logged locally with a timestamp.
+Re-run any past query with one click, or filter history down to clip
+searches only, or queries where the system actually retried.
 
-`data/lessons/manifest.json` currently points at the 3 real lessons in
-`class-subtitle/module 1/`. To ingest more, add entries of the form:
+---
 
-```json
-{ "filePath": "path/to/file.vtt", "lessonName": "Human-Readable Name", "videoId": "unique-stable-id" }
-```
+## 🏗️ How it works
 
-Re-running ingestion on the same files updates existing chunks (stable
-`${videoId}-${chunkIndex}` ids) rather than duplicating them.
-
-### 5. Start the API server
-
-```bash
-npm start
-# RAG API listening on http://localhost:3000
-```
-
-## Example requests
-
-```bash
-curl -X POST http://localhost:3000/query \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What is the difference between React Native and Expo?"}'
-
-curl "http://localhost:3000/clips?category=insightful&minConfidence=6&limit=10"
-
-curl -X POST http://localhost:3000/clips/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Find a funny moment about job interviews or confusing diagrams."}'
-```
-
-## Adding sources beyond the CLI manifest
-
-Three more ingestion paths run synchronously over HTTP (same classify -> embed
--> upsert pipeline as `ingest.js`, just fed from an upload/URL instead of a
-manifest entry) - these back the frontend's "Add Source" modal:
-
-```bash
-# VTT/SRT upload
-curl -X POST http://localhost:3000/sources/vtt \
-  -F "file=@lesson.vtt" -F "lessonName=My Lesson"
-
-# PDF upload - each page becomes one chunk, cited by page number (no timestamps)
-curl -X POST http://localhost:3000/sources/pdf \
-  -F "file=@handbook.pdf" -F "lessonName=Employee Handbook"
-
-# YouTube - only works if the video already has captions (auto or manual);
-# no audio transcription/STT is performed
-curl -X POST http://localhost:3000/sources/youtube \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://www.youtube.com/watch?v=...", "lessonName": "Optional name"}'
-```
-
-PDF chunks carry `sourceType: "pdf"` with `startTime`/`endTime` both set to
-the page number; `graph.js` cites these as `(Doc Name, p. 4)` instead of a
-`mm:ss` timestamp, and the guardrail/clip-matching logic checks for an exact
-page match rather than the ±5-second slack used for video chunks.
-
-## Running the test suite
-
-Each phase has its own runnable acceptance-test script under `test/`, plus a
-combined runner:
-
-```bash
-npm run test:ingest    # Phase 1: metadata shape, time ranges, dedup on re-ingest
-npm run test:query     # Phase 2+3: real question -> cited answer, variants, dedup
-npm run test:crag      # Phase 4: grade/retry routing logic + retry cap
-npm run test:guardrail # Phase 5: citation + sensitive-content checks
-npm run test:trace     # Phase 6: full trace shape/order/coverage
-npm run test:clips     # Phase 7: browseClips filters + searchClips shape
-npm run test:server    # Phase 8: spins up server.js, hits all 3 endpoints
-npm run test:all       # all of the above, in order
-```
-
-`test:ingest`, `test:query`, `test:trace`, `test:clips`, and `test:server` make
-real OpenAI + Chroma calls (Chroma must be running; `OPENAI_API_KEY` must be
-set). `test:crag` and `test:guardrail` are pure unit tests with no network
-calls.
-
-## Deploying the backend (Render)
-
-Vercel's serverless functions don't fit this backend: the CRAG retry loop can
-take 30-160+ seconds per query (past Vercel's 10s/60s function timeouts), and
-Chroma's local disk storage wouldn't survive between serverless invocations
-anyway. Render runs a normal long-lived Node process instead, which fits.
-
-`render.yaml` defines **two services** - Chroma doesn't run in-process here.
-An earlier version tried spawning it via `npx chromadb run` inside the Node
-service, but that package's native binary requires a newer glibc than
-Render's Node runtime ships, so it crashes on start. Running Chroma from its
-official Docker image sidesteps that entirely:
-
-- `chroma-db` - Chroma's official Docker image (`chromadb/chroma`). This is
-  `type: web`, not a private service, because Render's private services have
-  no free instance type (paid only) - so this also gets a public
-  `.onrender.com` URL with **no authentication in front of Chroma's API**.
-  Fine for a demo; anyone who finds that URL can read or wipe your ingested
-  data, so add auth (or move this to a paid private service) before that
-  matters.
-- `rag-course-companion` - the Express API. It connects to `chroma-db` over
-  that same public HTTPS URL, not Render's private network - free web
-  services can't receive private-network traffic from another free service
-  (only from paid services/datastores), so the private network isn't an
-  option here at all while both are free.
-
-1. Push this repo to GitHub/GitLab.
-2. In the Render dashboard: **New +** -> **Blueprint**, point it at the repo.
-   Both services deploy on the **free** plan as configured.
-3. When prompted, enter `OPENAI_API_KEY` for the `rag-course-companion`
-   service. `CHROMA_HOST` can't be filled in during Blueprint creation -
-   `chroma-db`'s public hostname includes a random suffix Render only
-   assigns once it exists, so there's a chicken-and-egg problem within one
-   Blueprint run.
-4. Once `chroma-db` is deployed, copy its public hostname (e.g.
-   `chroma-db-9mtg.onrender.com`, no `https://` prefix) and set it as
-   `CHROMA_HOST` on `rag-course-companion` (`CHROMA_PORT=443` and
-   `CHROMA_SSL=true` are already set via `render.yaml`).
-5. Once deployed, ingest content either by using the frontend's "Add Source"
-   modal against the deployed URL (no local files needed), or by committing
-   `class-subtitle/` + `data/lessons/manifest.json` and running
-   `node ingest.js` once via Render's shell/a one-off job.
-
-If you set this up manually instead of via Blueprint, create the `chroma-db`
-web service yourself (image `docker.io/chromadb/chroma:latest`, free plan,
-env var `PORT=8000` since Render defaults to expecting 10000 and Chroma's
-image ignores that), then on `rag-course-companion` set `CHROMA_HOST` to
-`chroma-db`'s public hostname (found on its own dashboard page, under the
-service name), `CHROMA_PORT=443`, `CHROMA_SSL=true`, and set **Start
-Command** back to `node server.js`.
-
-**Free-tier tradeoff:** free web services can't attach a persistent disk, so
-Chroma's data lives on the container's ephemeral filesystem - wiped on every
-redeploy or Render-initiated restart, *and* on spin-down after 15 minutes
-idle. `.github/workflows/keep-alive.yml` pings the service every 10 minutes
-to prevent the idle case (add a repo secret `RENDER_APP_URL` with your
-deployed URL to enable it) - but it can't prevent a wipe from an actual
-redeploy/restart. If you want ingested data to actually persist across those,
-switch `plan: free` to `plan: starter` (or above) in `render.yaml` and add
-back a `disk:` block (see the comments in that file).
-
-The frontend lives in its own repo -
-[rag-course-companion-frontend](https://github.com/CodeMaestroRishit/rag-course-companion-frontend)
-- see its README for deploying to Vercel and pointing it at this backend's URL.
-
-## Known limitations / TODOs
-
-- **Prompts are functional but un-tuned.** `prompts/*.js` are simple, readable
-  templates meant to be iterated on, not final copy.
-- **Citation precision:** the QA `generate` prompt sometimes cites a timestamp
-  range spanning two adjacent chunks about the same sub-topic (e.g. `9:49 and
-  10:23`) rather than a single chunk's exact range. Still real, non-hallucinated
-  content - just looser than "one citation, one chunk."
-- **Rerank cost:** `rerank` sends up to 40 candidates' text to one LLM call per
-  attempt. Fine for this dataset (57 chunks); a much larger corpus would want a
-  cheaper first-pass rerank (e.g. a cross-encoder) before the LLM step.
-- **Recursion limit:** LangGraph's default `recursionLimit` (25) is too low for
-  a full 3-retry CRAG loop (needs ~28 node executions in the worst case).
-  `graph.js` exports and passes an explicit `RECURSION_LIMIT`; if `MAX_RETRIES`
-  is raised, bump this too.
-- **`searchClips` return shape** adds `lessonName`/`videoId` on top of the
-  `{category, startTime, endTime, pitch}` shape described in the spec - without
-  them there's no way to know which video file to actually cut the clip from.
-- **No auth/rate limiting** on `server.js` - intentional per this session's
-  scope (frontend/API-consumer concerns are for later).
-- **Single Chroma collection, single course.** No multi-tenancy / multi-course
-  namespacing yet.
-- **Ingested test data** is only `class-subtitle/module 1/` (3 lessons, 57
-  chunks). The other 16 modules in `class-subtitle/` are present on disk but
-  not yet ingested.
-- **`/sources/*` ingestion is synchronous** - a large PDF or long video's
-  captions can take a while (one classification LLM call per chunk), and the
-  request just blocks until it's done. Fine on Render; would need a job queue
-  (explicitly out of scope for this project) to feel good at real scale.
-- **YouTube ingestion is captions-only.** Videos without existing (auto or
-  manual) captions can't be ingested - there's no audio transcription step,
-  by design (no STT in scope). Also relies on an unofficial scraping library
-  (`youtube-transcript`), which can break if YouTube changes its internal API.
-- **PDF chunking is one-page-per-chunk**, with no sub-chunking for very long
-  pages and no OCR for scanned/image-only PDFs (`pdf-parse` only extracts
-  embedded text).
-- **Clip finder assumes video content conceptually** - "clip" search over a
-  PDF chunk still works mechanically (categorize + pick a page), but the
-  framing ("clip-worthy moment") is a stretch for a document.
