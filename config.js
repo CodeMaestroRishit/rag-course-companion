@@ -31,7 +31,7 @@ export function getChroma() {
     chromaClient = new ChromaClient({
       host: process.env.CHROMA_HOST || "localhost",
       port: process.env.CHROMA_PORT ? Number(process.env.CHROMA_PORT) : 8000,
-      ssl: false,
+      ssl: process.env.CHROMA_SSL === "true",
     });
   }
   return chromaClient;
