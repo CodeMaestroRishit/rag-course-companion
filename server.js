@@ -7,7 +7,7 @@ import cors from "cors";
 import multer from "multer";
 import { runQuery } from "./graph.js";
 import { browseClips, searchClips } from "./clips.js";
-import { listSources } from "./sources.js";
+import { listSources, deleteSource } from "./sources.js";
 import { parseSubtitleFile, mergeCuesIntoChunks, ingestChunks } from "./ingest.js";
 import { ingestPdfBuffer } from "./pdfIngest.js";
 import { ingestYoutubeUrl } from "./youtubeIngest.js";
@@ -58,6 +58,16 @@ app.get("/sources", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "internal error listing sources" });
+  }
+});
+
+app.delete("/sources/:sourceId", async (req, res) => {
+  try {
+    await deleteSource(req.params.sourceId);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error deleting source" });
   }
 });
 
