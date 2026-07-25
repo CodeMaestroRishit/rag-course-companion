@@ -136,11 +136,12 @@ app.get("/debug/chroma-hosts", async (req, res) => {
       const r = await fetch(`http://${host}:8000/api/v2/heartbeat`, { signal: AbortSignal.timeout(4000) });
       results[host] = r.ok ? "OK" : `HTTP ${r.status}`;
     } catch (e) {
-      results[host] = `FAIL: ${e.message}`;
+      results[host] = `FAIL: ${e.message} | cause: ${e.cause?.code || e.cause?.message || String(e.cause)}`;
     }
   }));
   res.json(results);
 });
+
 
 
 app.listen(PORT, () => {
