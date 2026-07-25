@@ -1,26 +1,42 @@
 # Render Blueprint - deploy with "New +" -> "Blueprint" in the Render
 # dashboard, pointing at this repo.
 #
-# This is configured for the FREE tier: no persistent disk, so Chroma's data
-# lives on the container's ephemeral filesystem and is wiped on every
-# redeploy or restart (not just idle spin-down - a pinger keeps the service
-# warm and avoids the 15-min idle spin-down, but can't prevent a wipe from an
-# actual redeploy/restart). If you want ingested data to actually persist,
-# switch `plan` to `starter` (or above) and add back a `disk:` block mounted
-# at e.g. /data, then set CHROMA_DATA_PATH to a path under it.
+# Two services:
+#   - chroma-db: Chroma's official Docker image, as an internal-only private
+#     service. (Running Chroma via `npx chromadb run` inside the Node service
+#     - the original approach here - fails on Render's Node runtime: the
+#     `chromadb` npm package's native binary requires a newer glibc than
+#     that runtime image ships. The official Docker image sidesteps this
+#     entirely.)
+#   - rag-course-companion: the Express API, talking to chroma-db over
+#     Render's private network.
+#
+# Both are on the FREE plan: no persistent disk, so Chroma's data lives on
+# its container's ephemeral filesystem - wiped on every redeploy/restart, and
+# (without a keep-alive pinger - see .github/workflows/keep-alive.yml) on
+# 15-minutes-idle spin-down too. For data that actually persists, switch both
+# services' `plan` to `starter` (or above) and add a `disk:` block to
+# chroma-db mounted at /data.
 services:
+  - name: chroma-db
+    type: pserv
+    runtime: image
+    plan: free
+    image:
+      url: docker.io/chromadb/chroma:latest
+
   - name: rag-course-companion
     type: web
     runtime: node
     plan: free
     buildCommand: npm install
-    startCommand: bash render-start.sh
+    startCommand: node server.js
     envVars:
       - key: OPENAI_API_KEY
         sync: false # you'll be prompted for this during Blueprint creation
       - key: CHROMA_HOST
-        value: 127.0.0.1
+        fromService:
+          name: chroma-db
+          property: host
       - key: CHROMA_PORT
         value: "8000"
-      - key: CHROMA_DATA_PATH
-        value: ./chroma-data
