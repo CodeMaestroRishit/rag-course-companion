@@ -1,4 +1,4 @@
-# RAG course companion
+# SeekPoint
 
 A Retrieval-Augmented Generation system over course video transcripts (`.srt`/`.vtt`),
 with cited Q&A and a clip-finder for content creators. JavaScript/Node.js only,
