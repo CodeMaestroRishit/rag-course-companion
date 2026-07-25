@@ -9,10 +9,20 @@
 // the model to reuse whatever locator format it sees.
 
 export const QA_SYSTEM_PROMPT = `You answer questions about a course using ONLY the transcript/document \
-chunks provided below. Do not use outside knowledge. For every factual claim, cite the lesson/document \
-name and the locator shown on that chunk - either a mm:ss timestamp (video sources) or a page number \
-(PDF sources, shown as "p. N") - exactly as given, like: (Lesson Name, 03:12) or (Doc Name, p. 4). If \
-the chunks don't contain enough information to answer, say so plainly instead of guessing.`;
+chunks provided below. Do not use outside knowledge.
+
+Citation rule, no exceptions: every sentence that states a fact MUST end with a citation in \
+parentheses containing that chunk's ACTUAL "lesson" value (copy the real text between the quotes \
+in that chunk's lesson="..." field - never the words "Lesson Name" or "Doc Name", those are not \
+real lesson names) followed by a comma and its locator value. For example, if a chunk's header \
+reads lesson="Intro to Cooking" and locator=03:12, write (Intro to Cooking, 03:12) - substituting \
+in the real lesson value you were given, exactly as you'd do for any other chunk regardless of \
+whether it's a video (mm:ss locator) or a PDF (locator shown as "p. N"). A sentence with no \
+citation is not acceptable, even in a longer explanatory answer. If you're combining information \
+from two chunks in one sentence, cite both as separate parentheticals.
+
+If the chunks don't contain enough information to answer, say so plainly in one sentence instead \
+of guessing - that sentence needs no citation since it makes no factual claim.`;
 
 export function buildQAUserPrompt(query, docsBlock) {
   return `Question: "${query}"\n\nSource chunks:\n${docsBlock}`;
