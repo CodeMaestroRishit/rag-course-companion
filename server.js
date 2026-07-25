@@ -128,6 +128,21 @@ app.post("/sources/youtube", async (req, res) => {
   }
 });
 
+app.get("/debug/chroma-hosts", async (req, res) => {
+  const candidates = ["chroma-db", "chroma-db-9mtg", "chroma", "chroma-9mtg"];
+  const results = {};
+  await Promise.all(candidates.map(async (host) => {
+    try {
+      const r = await fetch(`http://${host}:8000/api/v2/heartbeat`, { signal: AbortSignal.timeout(4000) });
+      results[host] = r.ok ? "OK" : `HTTP ${r.status}`;
+    } catch (e) {
+      results[host] = `FAIL: ${e.message}`;
+    }
+  }));
+  res.json(results);
+});
+
+
 app.listen(PORT, () => {
   console.log(`RAG API listening on http://localhost:${PORT}`);
 });
