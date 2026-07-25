@@ -156,14 +156,10 @@ anyway. Render runs a normal long-lived Node process instead, which fits.
 
 1. Push this repo to GitHub/GitLab.
 2. In the Render dashboard: **New +** -> **Blueprint**, point it at the repo.
-   `render.yaml` at the repo root defines the service - it requires a paid
-   plan (`starter` or above), because **free web services can't attach a
-   persistent disk**. Without one, Chroma's data is wiped every time the
-   service redeploys, restarts, or spins down from being idle, since free
-   instances have an ephemeral filesystem.
+   `render.yaml` at the repo root defines the service, currently on the
+   **free** plan.
 3. When prompted, enter `OPENAI_API_KEY`. Everything else (`CHROMA_HOST`,
-   `CHROMA_PORT`, `CHROMA_DATA_PATH`, the disk mount) is already set in
-   `render.yaml`.
+   `CHROMA_PORT`, `CHROMA_DATA_PATH`) is already set in `render.yaml`.
 4. `render-start.sh` runs Chroma as a background process bound to
    `127.0.0.1:8000` (Render only exposes the one port `server.js` binds to
    via `PORT` - Chroma's port is never reachable from the public internet),
@@ -172,6 +168,16 @@ anyway. Render runs a normal long-lived Node process instead, which fits.
    modal against the deployed URL (no local files needed), or by committing
    `class-subtitle/` + `data/lessons/manifest.json` and running
    `node ingest.js` once via Render's shell/a one-off job.
+
+**Free-tier tradeoff:** free web services can't attach a persistent disk, so
+Chroma's data lives on the container's ephemeral filesystem - wiped on every
+redeploy or Render-initiated restart, *and* on spin-down after 15 minutes
+idle. `.github/workflows/keep-alive.yml` pings the service every 10 minutes
+to prevent the idle case (add a repo secret `RENDER_APP_URL` with your
+deployed URL to enable it) - but it can't prevent a wipe from an actual
+redeploy/restart. If you want ingested data to actually persist across those,
+switch `plan: free` to `plan: starter` (or above) in `render.yaml` and add
+back a `disk:` block (see the comments in that file).
 
 The frontend lives in its own repo -
 [rag-course-companion-frontend](https://github.com/CodeMaestroRishit/rag-course-companion-frontend)

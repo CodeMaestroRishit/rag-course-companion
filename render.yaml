@@ -1,19 +1,20 @@
 # Render Blueprint - deploy with "New +" -> "Blueprint" in the Render
-# dashboard, pointing at this repo. Requires a paid plan (starter or above)
-# because persistent disks aren't available on free web services - without
-# one, Chroma's data would be wiped every time the service restarts, redeploys,
-# or spins down from idling.
+# dashboard, pointing at this repo.
+#
+# This is configured for the FREE tier: no persistent disk, so Chroma's data
+# lives on the container's ephemeral filesystem and is wiped on every
+# redeploy or restart (not just idle spin-down - a pinger keeps the service
+# warm and avoids the 15-min idle spin-down, but can't prevent a wipe from an
+# actual redeploy/restart). If you want ingested data to actually persist,
+# switch `plan` to `starter` (or above) and add back a `disk:` block mounted
+# at e.g. /data, then set CHROMA_DATA_PATH to a path under it.
 services:
   - name: rag-course-companion
     type: web
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm install
     startCommand: bash render-start.sh
-    disk:
-      name: chroma-data
-      mountPath: /data
-      sizeGB: 5
     envVars:
       - key: OPENAI_API_KEY
         sync: false # you'll be prompted for this during Blueprint creation
@@ -22,4 +23,4 @@ services:
       - key: CHROMA_PORT
         value: "8000"
       - key: CHROMA_DATA_PATH
-        value: /data/chroma
+        value: ./chroma-data

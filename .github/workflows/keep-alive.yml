@@ -1,0 +1,26 @@
+# Pings the deployed Render backend often enough that it never sits idle for
+# the 15 minutes that triggers a free-tier spin-down.
+#
+# This does NOT make Chroma's data durable - a redeploy or Render-initiated
+# restart still wipes the ephemeral filesystem regardless of pinging. It only
+# avoids the specific "went cold from inactivity" case.
+#
+# Setup: Repo Settings -> Secrets and variables -> Actions -> New repository
+# secret, name RENDER_APP_URL, value your deployed URL
+# (e.g. https://rag-course-companion.onrender.com - no trailing slash).
+name: Keep Render backend alive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes, comfortably under the 15-min idle timeout
+  workflow_dispatch: {} # lets you trigger it manually from the Actions tab too
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit a lightweight endpoint
+        run: |
+          curl -sf "${{ secrets.RENDER_APP_URL }}/clips?limit=1" -o /dev/null \
+            && echo "Pinged OK" \
+            || echo "Ping failed (service may be cold-starting or down)"
