@@ -1,25 +1,42 @@
 # Render Blueprint - deploy with "New +" -> "Blueprint" in the Render
-# dashboard, pointing at this repo. Requires a paid plan (starter or above)
-# because persistent disks aren't available on free web services - without
-# one, Chroma's data would be wiped every time the service restarts, redeploys,
-# or spins down from idling.
+# dashboard, pointing at this repo.
+#
+# Two services:
+#   - chroma-db: Chroma's official Docker image, as an internal-only private
+#     service. (Running Chroma via `npx chromadb run` inside the Node service
+#     - the original approach here - fails on Render's Node runtime: the
+#     `chromadb` npm package's native binary requires a newer glibc than
+#     that runtime image ships. The official Docker image sidesteps this
+#     entirely.)
+#   - rag-course-companion: the Express API, talking to chroma-db over
+#     Render's private network.
+#
+# Both are on the FREE plan: no persistent disk, so Chroma's data lives on
+# its container's ephemeral filesystem - wiped on every redeploy/restart, and
+# (without a keep-alive pinger - see .github/workflows/keep-alive.yml) on
+# 15-minutes-idle spin-down too. For data that actually persists, switch both
+# services' `plan` to `starter` (or above) and add a `disk:` block to
+# chroma-db mounted at /data.
 services:
+  - name: chroma-db
+    type: pserv
+    runtime: image
+    plan: free
+    image:
+      url: docker.io/chromadb/chroma:latest
+
   - name: rag-course-companion
     type: web
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm install
-    startCommand: bash render-start.sh
-    disk:
-      name: chroma-data
-      mountPath: /data
-      sizeGB: 5
+    startCommand: node server.js
     envVars:
       - key: OPENAI_API_KEY
         sync: false # you'll be prompted for this during Blueprint creation
       - key: CHROMA_HOST
-        value: 127.0.0.1
+        fromService:
+          name: chroma-db
+          property: host
       - key: CHROMA_PORT
         value: "8000"
-      - key: CHROMA_DATA_PATH
-        value: /data/chroma
