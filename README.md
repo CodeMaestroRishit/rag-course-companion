@@ -154,20 +154,42 @@ take 30-160+ seconds per query (past Vercel's 10s/60s function timeouts), and
 Chroma's local disk storage wouldn't survive between serverless invocations
 anyway. Render runs a normal long-lived Node process instead, which fits.
 
+`render.yaml` defines **two services** - Chroma doesn't run in-process here.
+An earlier version tried spawning it via `npx chromadb run` inside the Node
+service, but that package's native binary requires a newer glibc than
+Render's Node runtime ships, so it crashes on start. Running Chroma from its
+official Docker image sidesteps that entirely:
+
+- `chroma-db` - Chroma's official Docker image (`chromadb/chroma`). This is
+  `type: web`, not a private service, because Render's private services have
+  no free instance type (paid only) - so this also gets a public
+  `.onrender.com` URL with **no authentication in front of Chroma's API**.
+  Fine for a demo; anyone who finds that URL can read or wipe your ingested
+  data, so add auth (or move this to a paid private service) before that
+  matters.
+- `rag-course-companion` - the Express API, reaching `chroma-db` over
+  Render's private network regardless (`CHROMA_HOST` is wired via
+  `fromService` in `render.yaml`, so no manual hostname copying needed under
+  Blueprint) - not through that public URL.
+
 1. Push this repo to GitHub/GitLab.
 2. In the Render dashboard: **New +** -> **Blueprint**, point it at the repo.
-   `render.yaml` at the repo root defines the service, currently on the
-   **free** plan.
-3. When prompted, enter `OPENAI_API_KEY`. Everything else (`CHROMA_HOST`,
-   `CHROMA_PORT`, `CHROMA_DATA_PATH`) is already set in `render.yaml`.
-4. `render-start.sh` runs Chroma as a background process bound to
-   `127.0.0.1:8000` (Render only exposes the one port `server.js` binds to
-   via `PORT` - Chroma's port is never reachable from the public internet),
-   waits for its heartbeat, then starts `server.js`.
-5. Once deployed, ingest content either by using the frontend's "Add Source"
+   Both services deploy on the **free** plan as configured.
+3. When prompted, enter `OPENAI_API_KEY` for the `rag-course-companion`
+   service.
+4. Once deployed, ingest content either by using the frontend's "Add Source"
    modal against the deployed URL (no local files needed), or by committing
    `class-subtitle/` + `data/lessons/manifest.json` and running
    `node ingest.js` once via Render's shell/a one-off job.
+
+If you set this up manually instead of via Blueprint (e.g. you already had a
+service running before this split), you'll need to create the `chroma-db`
+web service yourself (image `docker.io/chromadb/chroma:latest`, free plan,
+env var `PORT=8000` since Render defaults to expecting 10000 and Chroma's
+image ignores that) and set `CHROMA_HOST` on `rag-course-companion` to its
+internal hostname by hand (found under that service's **Connect** ->
+**Internal** tab), plus set **Start Command** on `rag-course-companion` back
+to `node server.js`.
 
 **Free-tier tradeoff:** free web services can't attach a persistent disk, so
 Chroma's data lives on the container's ephemeral filesystem - wiped on every

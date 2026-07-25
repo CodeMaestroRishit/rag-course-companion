@@ -2,14 +2,22 @@
 # dashboard, pointing at this repo.
 #
 # Two services:
-#   - chroma-db: Chroma's official Docker image, as an internal-only private
-#     service. (Running Chroma via `npx chromadb run` inside the Node service
-#     - the original approach here - fails on Render's Node runtime: the
-#     `chromadb` npm package's native binary requires a newer glibc than
-#     that runtime image ships. The official Docker image sidesteps this
-#     entirely.)
+#   - chroma-db: Chroma's official Docker image. (Running Chroma via
+#     `npx chromadb run` inside the Node service - the original approach
+#     here - fails on Render's Node runtime: the `chromadb` npm package's
+#     native binary requires a newer glibc than that runtime image ships.
+#     The official Docker image sidesteps this entirely.)
 #   - rag-course-companion: the Express API, talking to chroma-db over
 #     Render's private network.
+#
+# chroma-db is `type: web`, not `type: pserv` (private service), because
+# Render's private services have no free instance type - only a paid one.
+# This means Chroma's HTTP API also gets a public `.onrender.com` URL with
+# no authentication in front of it. rag-course-companion still talks to it
+# over the private network (via CHROMA_HOST below), which is what actually
+# matters for normal operation - but anyone who finds the public URL can
+# read or wipe the ingested data. Fine for a demo; add auth (or switch this
+# to `type: pserv` on a paid plan) before treating this as a real deployment.
 #
 # Both are on the FREE plan: no persistent disk, so Chroma's data lives on
 # its container's ephemeral filesystem - wiped on every redeploy/restart, and
@@ -19,7 +27,7 @@
 # chroma-db mounted at /data.
 services:
   - name: chroma-db
-    type: pserv
+    type: web
     runtime: image
     plan: free
     image:
