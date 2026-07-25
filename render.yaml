@@ -24,6 +24,13 @@ services:
     plan: free
     image:
       url: docker.io/chromadb/chroma:latest
+    envVars:
+      # Render defaults to expecting the container's app on port 10000; the
+      # official Chroma image hardcodes 8000 and ignores that, so this has to
+      # be set explicitly or Render's private-network routing won't line up
+      # with the port Chroma is actually listening on.
+      - key: PORT
+        value: "8000"
 
   - name: rag-course-companion
     type: web
