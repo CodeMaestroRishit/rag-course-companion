@@ -167,29 +167,36 @@ official Docker image sidesteps that entirely:
   Fine for a demo; anyone who finds that URL can read or wipe your ingested
   data, so add auth (or move this to a paid private service) before that
   matters.
-- `rag-course-companion` - the Express API, reaching `chroma-db` over
-  Render's private network regardless (`CHROMA_HOST` is wired via
-  `fromService` in `render.yaml`, so no manual hostname copying needed under
-  Blueprint) - not through that public URL.
+- `rag-course-companion` - the Express API. It connects to `chroma-db` over
+  that same public HTTPS URL, not Render's private network - free web
+  services can't receive private-network traffic from another free service
+  (only from paid services/datastores), so the private network isn't an
+  option here at all while both are free.
 
 1. Push this repo to GitHub/GitLab.
 2. In the Render dashboard: **New +** -> **Blueprint**, point it at the repo.
    Both services deploy on the **free** plan as configured.
 3. When prompted, enter `OPENAI_API_KEY` for the `rag-course-companion`
-   service.
-4. Once deployed, ingest content either by using the frontend's "Add Source"
+   service. `CHROMA_HOST` can't be filled in during Blueprint creation -
+   `chroma-db`'s public hostname includes a random suffix Render only
+   assigns once it exists, so there's a chicken-and-egg problem within one
+   Blueprint run.
+4. Once `chroma-db` is deployed, copy its public hostname (e.g.
+   `chroma-db-9mtg.onrender.com`, no `https://` prefix) and set it as
+   `CHROMA_HOST` on `rag-course-companion` (`CHROMA_PORT=443` and
+   `CHROMA_SSL=true` are already set via `render.yaml`).
+5. Once deployed, ingest content either by using the frontend's "Add Source"
    modal against the deployed URL (no local files needed), or by committing
    `class-subtitle/` + `data/lessons/manifest.json` and running
    `node ingest.js` once via Render's shell/a one-off job.
 
-If you set this up manually instead of via Blueprint (e.g. you already had a
-service running before this split), you'll need to create the `chroma-db`
+If you set this up manually instead of via Blueprint, create the `chroma-db`
 web service yourself (image `docker.io/chromadb/chroma:latest`, free plan,
 env var `PORT=8000` since Render defaults to expecting 10000 and Chroma's
-image ignores that) and set `CHROMA_HOST` on `rag-course-companion` to its
-internal hostname by hand (found under that service's **Connect** ->
-**Internal** tab), plus set **Start Command** on `rag-course-companion` back
-to `node server.js`.
+image ignores that), then on `rag-course-companion` set `CHROMA_HOST` to
+`chroma-db`'s public hostname (found on its own dashboard page, under the
+service name), `CHROMA_PORT=443`, `CHROMA_SSL=true`, and set **Start
+Command** back to `node server.js`.
 
 **Free-tier tradeoff:** free web services can't attach a persistent disk, so
 Chroma's data lives on the container's ephemeral filesystem - wiped on every
