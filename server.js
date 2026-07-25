@@ -7,6 +7,7 @@ import cors from "cors";
 import multer from "multer";
 import { runQuery } from "./graph.js";
 import { browseClips, searchClips } from "./clips.js";
+import { listSources } from "./sources.js";
 import { parseSubtitleFile, mergeCuesIntoChunks, ingestChunks } from "./ingest.js";
 import { ingestPdfBuffer } from "./pdfIngest.js";
 import { ingestYoutubeUrl } from "./youtubeIngest.js";
@@ -49,6 +50,17 @@ app.get("/clips", async (req, res) => {
     res.status(500).json({ error: "internal error browsing clips" });
   }
 });
+
+app.get("/sources", async (req, res) => {
+  try {
+    const result = await listSources();
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error listing sources" });
+  }
+});
+
 
 app.post("/clips/search", async (req, res) => {
   const { query } = req.body ?? {};
