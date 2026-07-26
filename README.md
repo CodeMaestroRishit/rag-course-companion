@@ -19,7 +19,7 @@ creators and learners who don't have time to scrub through hours of video.
 
 <br>
 
-![SeekPoint — Welcome screen](docs/screenshots/hero.png)
+![SeekPoint — Welcome screen](pictures_readme/hero.png)
 
 </div>
 
