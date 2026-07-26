@@ -151,8 +151,16 @@ searches only, or queries where the system actually retried.
 
 
 
-##⚠️ Known Limitations
-1)Backend runs on Render's free tier — the first request after ~15 minutes of inactivity can take 30-60s to spin up (a GitHub Actions keep-alive pinger reduces this, but doesn't eliminate cold starts entirely).
-2)Chroma runs on ephemeral disk on the free tier, so ingested sources can be wiped by a redeploy or restart — re-upload if /sources comes back empty.
-3)No authentication — the live demo link is meant for evaluation, not for sharing an API key's usage broadly.
-Plain-text and web-page sources cite by section number (§N) rather than a page or timestamp, since neither concept applies to raw text.
+## ⚠️ Known Limitations
+
+- Backend runs on Render's free tier — the first request after ~15 minutes
+  of inactivity can take 30-60s to spin up (a GitHub Actions keep-alive
+  pinger reduces this, but doesn't eliminate cold starts entirely).
+- Chroma runs on ephemeral disk on the free tier, so ingested sources can be
+  wiped by a redeploy or restart — re-upload if `/sources` comes back empty.
+- No authentication — the live demo link is meant for evaluation, not for
+  sharing an API key's usage broadly.
+- Plain-text and web-page sources cite by section number (`§N`) rather than
+  a page or timestamp, since neither concept applies to raw text.
+
+
