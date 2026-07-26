@@ -15,7 +15,7 @@ creators and learners who don't have time to scrub through hours of video.
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
 [![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render&logoColor=white)](https://render.com)
 
-**[🚀 Live Demo](https://rag-course-companion-frontend-dqql.vercel.app)**
+**[🚀 Live Demo](https://rag-course-companion-frontend-dqql.vercel.ap)**
 
 <br>
 
