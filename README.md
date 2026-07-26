@@ -33,7 +33,7 @@ ingested lessons — every claim cites the lesson name and an exact timestamp
 (or page number, for PDFs), rendered as clickable pills. If the lessons don't
 cover it, it says so instead of guessing.
 
-![Answer with citation pills](docs/screenshots/answer-citations.png)
+![Answer with citation pills](pictures_readme/trace.png)
 
 ### 🧠 A reasoning trace you can actually see
 Every query runs through a real pipeline — query transform (HyDE + sub-query
@@ -42,7 +42,7 @@ self-grade → guardrail — and you can watch every step happen. Low-confidence
 answers trigger an automatic retry loop with feedback from the grading step,
 visible right in the trace timeline.
 
-![Reasoning trace panel open beside a cited answer](docs/screenshots/trace-panel.png)
+![Reasoning trace panel open beside a cited answer](pictures_readme/reasoning.png)
 
 ### 🎬 Clip Finder for content creators
 **Browse** every source pre-scanned and tagged as funny, insightful,
@@ -51,7 +51,7 @@ confidence score. **Search** in plain language ("find something funny about
 job interviews") and get back one best-match clip with an exact
 timestamp/page, ready to cut into a short or highlight reel.
 
-![Clip Finder in Browse mode with category filters](docs/screenshots/clip-finder.png)
+![Clip Finder in Browse mode with category filters](pictures_readme/clips.png)
 
 ### 📚 Ingest from anywhere
 Upload `.vtt`/`.srt` subtitle files, PDFs (cited by page number instead of
